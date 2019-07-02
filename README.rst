@@ -89,4 +89,3 @@ Examples
 In the examples directory, there is a simple woe transformation program as tutorials.
 
 Or you can write a more complex program with this `woe` package.
-on branch feature
