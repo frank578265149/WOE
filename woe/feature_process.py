@@ -434,7 +434,7 @@ def proc_woe_discrete(df,var,global_bt,global_gt,min_sample,alpha=0.01):
 
 def proc_woe_continuous(df,var,global_bt,global_gt,min_sample,alpha=0.01):
     '''
-    process woe transformation of continuous variables
+    处理连续变量的woe转换
     :param df:
     :param var:
     :param global_bt:
@@ -472,31 +472,27 @@ def fillna(dataset,bin_var_list,discrete_var_list,continuous_filler=-1,discrete_
     :return: null value,replace null value inplace
     """
     for var in [tmp for tmp in bin_var_list if tmp in list(dataset.columns)]:
-        # fill null
         dataset.loc[dataset[var].isnull(), (var)] = continuous_filler
 
     for var in [tmp for tmp in discrete_var_list if tmp in list(dataset.columns)]:
-        # fill null
         dataset.loc[dataset[var].isnull(), (var)] = discrete_filler
 
 
 def process_train_woe(infile_path=None,outfile_path=None,rst_path=None,config_path=None):
-    print('run into process_train_woe: \n',time.asctime(time.localtime(time.time())))
+    print('run into process_train_woe: ',time.asctime(time.localtime(time.time())))
     data_path = infile_path
     cfg = config.config()
     cfg.load_file(config_path,data_path)
     bin_var_list = [tmp for tmp in cfg.bin_var_list if tmp in list(cfg.dataset_train.columns)]
 
     for var in bin_var_list:
-        # fill null
         cfg.dataset_train.loc[cfg.dataset_train[var].isnull(), (var)] = -1
 
-    # change feature dtypes
     change_feature_dtype(cfg.dataset_train, cfg.variable_type)
     rst = []
 
     # process woe transformation of continuous variables
-    print('process woe transformation of continuous variables: \n',time.asctime(time.localtime(time.time())))
+    print('process woe transformation of continuous variables: ',time.asctime(time.localtime(time.time())))
     print('cfg.global_bt',cfg.global_bt)
     print('cfg.global_gt', cfg.global_gt)
 
@@ -504,7 +500,7 @@ def process_train_woe(infile_path=None,outfile_path=None,rst_path=None,config_pa
         rst.append(proc_woe_continuous(cfg.dataset_train,var,cfg.global_bt,cfg.global_gt,cfg.min_sample,alpha=0.05))
 
     # process woe transformation of discrete variables
-    print('process woe transformation of discrete variables: \n',time.asctime(time.localtime(time.time())))
+    print('process woe transformation of discrete variables: ',time.asctime(time.localtime(time.time())))
     for var in [tmp for tmp in cfg.discrete_var_list if tmp in list(cfg.dataset_train.columns)]:
         # fill null
         cfg.dataset_train.loc[cfg.dataset_train[var].isnull(), (var)] = 'missing'
@@ -542,4 +538,4 @@ def process_woe_trans(in_data_path=None,rst_path=None,out_path=None,config_path=
     for r in rst:
         cfg.dataset_train[r.var_name] = woe_trans(cfg.dataset_train[r.var_name], r)
 
-    cfg.dataset_train.to_csv(out_path)
+    cfg.dataset_train.to_csv(out_path,index=False)
