@@ -8,22 +8,6 @@ version: 0.1.4
 
 Tools for WoE Transformation mostly used in ScoreCard Model for credit rating
 
-Installation
---------------------------------
-
-We can simply use pip to install, as the following:
-
-.. code-block:: bash
-
-   $ pip install woe
-
-or installing from git
-
-.. code-block:: bash
-
-   $ pip install git+https://github.com/boredbird/woe
-
-
 Features
 ========
 
