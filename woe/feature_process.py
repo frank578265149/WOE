@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-__author__ = 'boredbird'
+__author__ = 'lin.xiong@beibei.com'
 import numpy as np
 import woe.config as config
 import woe.eval as eval
@@ -13,11 +13,10 @@ class node:
     '''
     def __init__(self,var_name=None,iv=0,split_point=None,right=None,left=None):
         self.var_name = var_name  # The column index value of the attributes that are used to split data sets
-        self.iv = iv  # The info value of the node
-        self.split_point = split_point  # Store split points list
-        self.right = right  # Right sub tree
-        self.left = left  # Left sub tree
-
+        self.iv = iv  # 树的iv值
+        self.split_point = split_point # 分裂节点
+        self.right = right  
+        self.left = left  
 
 class InfoValue(object):
     '''
@@ -50,7 +49,6 @@ class InfoValue(object):
         self.sub_total_num_percentage = civ.sub_total_num_percentage
         self.positive_rate_in_sub_total = civ.positive_rate_in_sub_total
         self.negative_rate_in_sub_total = civ.negative_rate_in_sub_total
-
 
 class DisInfoValue(object):
     '''
@@ -123,11 +121,6 @@ def check_point(df,var,split,min_sample):
 def calulate_iv(df,var,global_bt,global_gt):
     '''
     计算woe和iv值
-    :param df:
-    :param var:
-    :param global_bt:
-    :param global_gt:
-    :return:
     '''
     # a = df.groupby(['target']).count()
     groupdetail = {}
@@ -149,9 +142,7 @@ def calulate_iv(df,var,global_bt,global_gt):
 
 def calculate_iv_split(df,var,split_point,global_bt,global_gt):
     """
-        计算分类某个节点时的iv值
-    note:
-        df要有target列，不然没法计算iv值
+        计算分类某个节点时的iv值,df要有target列，不然没法计算iv值
     """
     #split dataset
     dataset_r = df[df.loc[:,var] > split_point][[var,'target']]
@@ -265,9 +256,7 @@ def binning_data_split(df,var,global_bt,global_gt,min_sample,alpha=0.01):
 
 def search(tree,split_list):
     '''
-    search the tree node
-    :param tree: a instance of Tree Node Class
-    :return: split points list
+    找到树的分裂节点，返回 split_point list
     '''
     if isinstance(tree.split_point, list):
         split_list.extend(tree.split_point)
@@ -335,7 +324,9 @@ def format_iv_split(df,var,split_list,global_bt,global_gt):
 
 
 def woe_trans(dvar,civ):
-    # replace the var value with the given woe value
+    """
+        使用woe值替换原始值
+    """
     var = copy.deepcopy(dvar)
     if not civ.is_discrete:
         if civ.woe_list.__len__()>1:
@@ -360,7 +351,7 @@ def woe_trans(dvar,civ):
 
 def proc_woe_discrete(df,var,global_bt,global_gt,min_sample,alpha=0.01):
     '''
-    process woe transformation of discrete variables
+    处理离散变量的woe转换
     :param df:
     :param var:
     :param global_bt:
@@ -378,7 +369,6 @@ def proc_woe_discrete(df,var,global_bt,global_gt,min_sample,alpha=0.01):
     cpvar = df[var]
     # print('np.unique(df[var])：',np.unique(df[var]))
     for var_value in np.unique(df[var]):
-        # Here come with a '==',in case type error you must do Nan filling process firstly
         df_temp = df[df[var] == var_value]
         gd = calulate_iv(df_temp,var,global_bt,global_gt)
         woei, ivi = gd['woei'],gd['ivi']
@@ -392,13 +382,13 @@ def proc_woe_discrete(df,var,global_bt,global_gt,min_sample,alpha=0.01):
 
     iv_tree = binning_data_split(df,var,global_bt,global_gt,min_sample,alpha)
 
-    # Traversal tree, get the segmentation point
+    # 得到所有的分裂点
     split_list = []
     search(iv_tree, split_list)
     split_list = list(np.unique([1.0 * x for x in split_list if x is not None]))
     split_list.sort()
 
-    # Segmentation point checking and processing
+    # 检查分裂点是否符合要求
     split_list = check_point(df, var, split_list, min_sample)
     split_list.sort()
 
@@ -456,13 +446,7 @@ def proc_woe_continuous(df,var,global_bt,global_gt,min_sample,alpha=0.01):
 
 def fillna(dataset,bin_var_list,discrete_var_list,continuous_filler=-1,discrete_filler='missing'):
     """
-    fill the null value in the dataframe inpalce
-    :param dataset: input dataset ,pandas.DataFrame type
-    :param bin_var_list:  continuous variables name list
-    :param discrete_var_list: discretevvvv variables name list
-    :param continuous_filler: the value to fill the null value in continuous variables
-    :param discrete_filler: the value to fill the null value in discrete variables
-    :return: null value,replace null value inplace
+     填充null, 连续值用 -1 , 离散用 `missing`
     """
     for var in [tmp for tmp in bin_var_list if tmp in list(dataset.columns)]:
         dataset.loc[dataset[var].isnull(), (var)] = continuous_filler
