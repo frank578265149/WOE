@@ -8,7 +8,8 @@ import pickle
 import time
 
 class node:
-    '''Tree Node Class
+    '''
+        树节点类(因为是利用决策树来做分组的)
     '''
     def __init__(self,var_name=None,iv=0,split_point=None,right=None,left=None):
         self.var_name = var_name  # The column index value of the attributes that are used to split data sets
@@ -20,7 +21,7 @@ class node:
 
 class InfoValue(object):
     '''
-    InfoValue Class
+        IV值(定义了计算iv值的好坏样本的数量，分组信息，分组iv值)
     '''
     def __init__(self):
         self.var_name = []
@@ -53,7 +54,7 @@ class InfoValue(object):
 
 class DisInfoValue(object):
     '''
-    A Class for the storage of discrete variables transformation information
+        离散变量的woe转换信息
     '''
     def __init__(self):
         self.var_name = None
@@ -63,10 +64,7 @@ class DisInfoValue(object):
 
 def change_feature_dtype(df,variable_type):
     '''
-    change feature data type by the variable_type DataFrame
-    :param df: dataset DataFrame
-    :param variable_type: the DataFrame about variables dtypes
-    :return: None
+        改变特征数据类型
     '''
     s = 'Changing Feature Dtypes'
     print(s.center(60,'-'))
@@ -79,22 +77,20 @@ def change_feature_dtype(df,variable_type):
             print('[original dtype] ',df.dtypes[vname],' [astype] ',variable_type.loc[vname,'v_type'])
             print('[unique value]',np.unique(df[vname]))
 
-    s = 'Variable Dtypes Have Been Specified'
+    s = 'Variable Dtypes Have Been Changed'
     print(s.center(60,'-'))
 
     return
 
 def check_point(df,var,split,min_sample):
     """
-    Check whether the segmentation points cause some packet samples to be too small;
-    If there is a packet sample size of less than 5% of the total sample size,
-    then merge with the adjacent packet until more than 5%;
+    检查某个分裂点是否是的落入某个组的样本数量少于总样本量的5%, 如果少于5%那就和相邻的组合并
     Applies only to continuous values
-    :param df: Dataset DataFrame
-    :param var: Variables list
-    :param split: Split points list
-    :param min_sample: Minimum packet sample size
-    :return: The split points list checked out
+    :param df: dataframe
+    :param var: 变量
+    :param split: 分裂点列表
+    :param min_sample: 某个组最少样本值
+    :return: 一组处理后的分裂点
     """
     new_split = []
     if split is not None and split.__len__()>0:
@@ -103,11 +99,11 @@ def check_point(df,var,split,min_sample):
         # 首先考察第一个分裂节点
         if (pdf.shape[0] < min_sample) or (len(np.unique(pdf['target']))<=1):
             # 叶子节点样本个数小于 Min_sample 或者 这个分裂区间只有一种标签
+            # 则这个分裂点就是不合法的分裂点，不考虑
             new_split.pop()
         for i in range(0,split.__len__()-1):
             pdf = df[(df[var] > split[i]) & (df[var] <= split[i+1])]
             if (pdf.shape[0] < min_sample) or (np.unique(pdf['target']).__len__()<=1):
-                # 孤弱
                 continue
             else:
                 new_split.append(split[i+1])
@@ -118,7 +114,6 @@ def check_point(df,var,split,min_sample):
         # 如果最后分裂点后的样本只有一种标签，也需要删除这个分裂节点
         if new_split.__len__()>1 and np.unique(df[df[var] >= new_split[new_split.__len__()-1]]['target']).__len__()<=1:
             new_split.pop()
-        #If the split list has only one value, and no smaller than this value
         if new_split == []:
             new_split = split
     else:
@@ -127,7 +122,7 @@ def check_point(df,var,split,min_sample):
 
 def calulate_iv(df,var,global_bt,global_gt):
     '''
-    calculate the iv and woe value without split
+    计算woe和iv值
     :param df:
     :param var:
     :param global_bt:
@@ -154,10 +149,9 @@ def calulate_iv(df,var,global_bt,global_gt):
 
 def calculate_iv_split(df,var,split_point,global_bt,global_gt):
     """
-    calculate the iv value with the specified split point
+        计算分类某个节点时的iv值
     note:
-        the dataset should have variables:'target' which to be encapsulated if have time
-    :return:
+        df要有target列，不然没法计算iv值
     """
     #split dataset
     dataset_r = df[df.loc[:,var] > split_point][[var,'target']]
@@ -291,8 +285,7 @@ def search(tree,split_list):
 
 def format_iv_split(df,var,split_list,global_bt,global_gt):
     '''
-    Given the dataset DataFrame and split points list then return a InfoValue instance;
-    Just for continuous variable
+    给定一个数据集dataframe, 和一个分裂点列表, 返回一个信息值
     :param df:
     :param var:
     :param split_list:
@@ -447,13 +440,13 @@ def proc_woe_continuous(df,var,global_bt,global_gt,min_sample,alpha=0.01):
     df = df[[var,'target']]
     iv_tree = binning_data_split(df, var,global_bt,global_gt,min_sample,alpha)
 
-    # Traversal tree, get the segmentation point
+    # 遍历整课树，获取最佳分裂点
     split_list = []
     search(iv_tree, split_list)
     split_list = list(np.unique([1.0 * x for x in split_list if x is not None]))
     split_list.sort()
 
-    # Segmentation point checking and processing
+    # 检查和处理分裂点
     split_list = check_point(df, var, split_list, min_sample)
     split_list.sort()
 
@@ -491,15 +484,15 @@ def process_train_woe(infile_path=None,outfile_path=None,rst_path=None,config_pa
     change_feature_dtype(cfg.dataset_train, cfg.variable_type)
     rst = []
 
-    # process woe transformation of continuous variables
+    
     print('process woe transformation of continuous variables: ',time.asctime(time.localtime(time.time())))
     print('cfg.global_bt',cfg.global_bt)
     print('cfg.global_gt', cfg.global_gt)
-
+    # 处理连续变量
     for var in bin_var_list:
         rst.append(proc_woe_continuous(cfg.dataset_train,var,cfg.global_bt,cfg.global_gt,cfg.min_sample,alpha=0.05))
 
-    # process woe transformation of discrete variables
+    # 处理离散变量
     print('process woe transformation of discrete variables: ',time.asctime(time.localtime(time.time())))
     for var in [tmp for tmp in cfg.discrete_var_list if tmp in list(cfg.dataset_train.columns)]:
         # fill null
@@ -508,7 +501,7 @@ def process_train_woe(infile_path=None,outfile_path=None,rst_path=None,config_pa
 
     feature_detail = eval.eval_feature_detail(rst, outfile_path)
 
-    print('save woe transformation rule into pickle: \n',time.asctime(time.localtime(time.time())))
+    print('save woe transformation rule into pickle: ',time.asctime(time.localtime(time.time())))
     output = open(rst_path, 'wb')
     pickle.dump(rst,output)
     output.close()
@@ -534,7 +527,6 @@ def process_woe_trans(in_data_path=None,rst_path=None,out_path=None,config_path=
     rst = pickle.load(output)
     output.close()
 
-    # Training dataset Woe Transformation
     for r in rst:
         cfg.dataset_train[r.var_name] = woe_trans(cfg.dataset_train[r.var_name], r)
 
